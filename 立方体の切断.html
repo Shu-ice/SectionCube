@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>SECTION CUBE - 立方体の切断</title>
+    <style>
+        :root {
+            --app-background: #111111;
+            --card-background: rgba(22, 22, 25, 0.95);
+            --card-background-highlight: rgba(35, 35, 40, 0.98);
+            --app-primary: #0A84FF;
+            --app-primary-light: rgba(10, 132, 255, 0.2);
+            --app-secondary: #5E5CE6;
+            --app-secondary-light: rgba(94, 92, 230, 0.2);
+            --app-accent: #64D2FF;
+            --app-accent-light: rgba(100, 210, 255, 0.2);
+            --app-success: #30D158;
+            --app-warning: #FF9F0A;
+            --app-danger: #FF453A;
+            --app-gray-1: #8E8E93;
+            --app-gray-2: #636366;
+            --app-gray-3: #3A3A3C;
+            --app-text: #FFFFFF;
+            --app-text-secondary: rgba(235, 235, 245, 0.6);
+            --app-text-tertiary: rgba(235, 235, 245, 0.3);
+            --app-shadow: rgba(0, 0, 0, 0.5);
+            --app-shadow-strong: rgba(0, 0, 0, 0.7);
+            --app-radius: 16px;
+            --app-radius-sm: 12px;
+            --app-grid: #888888;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background-color: var(--app-background);
+            color: var(--app-text);
+            overscroll-behavior: none;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .app-header {
+            margin-bottom: 24px;
+            text-align: center;
+            position: relative;
+        }
+
+        .app-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .logo-cube {
+            width: 40px;
+            height: 40px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-20deg) rotateY(30deg);
+            margin-right: 12px;
+        }
+
+        .logo-face {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--app-primary), var(--app-accent));
+            opacity: 0.9;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-face:nth-child(1) { transform: translateZ(20px); }
+        .logo-face:nth-child(2) { transform: rotateY(180deg) translateZ(20px); }
+        .logo-face:nth-child(3) { transform: rotateY(90deg) translateZ(20px); }
+        .logo-face:nth-child(4) { transform: rotateY(-90deg) translateZ(20px); }
+        .logo-face:nth-child(5) { transform: rotateX(90deg) translateZ(20px); }
+        .logo-face:nth-child(6) { transform: rotateX(-90deg) translateZ(20px); }
+
+        .app-title {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin: 0;
+            background: linear-gradient(135deg, var(--app-primary), var(--app-accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(10, 132, 255, 0.3);
+        }
+
+        .app-subtitle {
+            font-size: 16px;
+            font-weight: 400;
+            color: var(--app-text-secondary);
+            margin-top: 5px;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--app-radius);
+            box-shadow: 0 10px 30px var(--app-shadow-strong);
+            overflow: hidden;
+            margin-bottom: 20px;
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            transition: all 0.3s ease;
+            border: 1px solid var(--app-gray-3);
+        }
+
+        .card:hover {
+            box-shadow: 0 15px 40px var(--app-shadow-strong);
+            transform: translateY(-2px);
+            border-color: var(--app-gray-2);
+        }
+
+        .card-header {
+            padding: 24px;
+            position: relative;
+            background-color: var(--card-background-highlight);
+            border-bottom: 1px solid var(--app-gray-3);
+        }
+
+        .card-header:after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 20%;
+            right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent, 
+                var(--app-primary) 20%, 
+                var(--app-accent) 80%, 
+                transparent
+            );
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .status-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #pointsSelected {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--app-text);
+            padding: 10px 18px;
+            background-color: var(--app-primary-light);
+            border-radius: 20px;
+            border: 1px solid rgba(10, 132, 255, 0.3);
+        }
+
+        #statusMessage {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--app-text-secondary);
+            text-align: center;
+            margin: 15px 0;
+            min-height: 22px;
+            padding: 10px;
+            border-radius: 12px;
+            background-color: rgba(60, 60, 67, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #statusMessage.highlight {
+            background-color: var(--app-primary-light);
+            color: var(--app-text);
+        }
+
+        #gameCanvas {
+            width: 100%;
+            border-radius: var(--app-radius);
+            background-color: rgba(15, 15, 18, 0.8);
+            box-shadow: 0 8px 25px var(--app-shadow);
+            cursor: grab;
+            transition: all 0.3s ease;
+            touch-action: none;
+            border: 1px solid var(--app-gray-3);
+            position: relative;
+            z-index: 1;
+        }
+
+        #gameCanvas:hover {
+            border-color: var(--app-gray-2);
+            box-shadow: 0 12px 30px var(--app-shadow-strong);
+        }
+
+        #gameCanvas:active {
+            cursor: grabbing;
+            box-shadow: 0 5px 15px var(--app-shadow);
+            transform: scale(0.99);
+        }
+
+        .button-container {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .app-button {
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 130px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .app-button:hover:before {
+            opacity: 1;
+        }
+
+        .app-button:active {
+            transform: scale(0.96);
+        }
+
+        .btn-primary {
+            background-color: var(--app-primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(10, 132, 255, 0.5);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 16px rgba(10, 132, 255, 0.6);
+        }
+
+        .btn-secondary {
+            background-color: var(--app-gray-3);
+            color: var(--app-text);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--app-gray-2);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-danger {
+            background-color: var(--app-danger);
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 69, 58, 0.5);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 16px rgba(255, 69, 58, 0.6);
+        }
+
+        .instruction-list {
+            list-style-type: none;
+            margin: 20px 0;
+            padding: 0;
+        }
+
+        .instruction-list li {
+            position: relative;
+            padding: 8px 0 8px 28px;
+            font-size: 15px;
+            color: var(--app-text-secondary);
+            line-height: 1.5;
+        }
+
+        .instruction-list li:before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 14px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--app-primary), var(--app-accent));
+            box-shadow: 0 0 8px var(--app-primary);
+        }
+
+        .instruction-list strong {
+            color: var(--app-text);
+            font-weight: 600;
+        }
+
+        .control-tip {
+            font-size: 14px;
+            color: var(--app-text-tertiary);
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 12px;
+            background-color: rgba(60, 60, 67, 0.1);
+        }
+
+        .error-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background-color: rgba(15, 15, 18, 0.9);
+            z-index: 2;
+            border-radius: var(--app-radius);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .error-message h3 {
+            color: var(--app-danger);
+            margin-bottom: 10px;
+        }
+
+        .error-message button {
+            margin-top: 15px;
+            padding: 8px 16px;
+            background-color: var(--app-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(15, 15, 18, 0.7);
+            z-index: 3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--app-radius);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top-color: var(--app-primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            font-size: 13px;
+            color: var(--app-text-tertiary);
+            padding: 20px;
+            border-top: 1px solid var(--app-gray-3);
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+            .card-header {
+                padding: 20px;
+            }
+            .card-body {
+                padding: 15px;
+            }
+            .app-button {
+                padding: 10px 20px;
+                font-size: 14px;
+                min-width: 110px;
+            }
+            .app-title {
+                font-size: 24px;
+            }
+            .logo-cube {
+                width: 32px;
+                height: 32px;
+            }
+            .logo-face {
+                width: 32px;
+                height: 32px;
+            }
+            .logo-face:nth-child(1) { transform: translateZ(16px); }
+            .logo-face:nth-child(2) { transform: rotateY(180deg) translateZ(16px); }
+            .logo-face:nth-child(3) { transform: rotateY(90deg) translateZ(16px); }
+            .logo-face:nth-child(4) { transform: rotateY(-90deg) translateZ(16px); }
+            .logo-face:nth-child(5) { transform: rotateX(90deg) translateZ(16px); }
+            .logo-face:nth-child(6) { transform: rotateX(-90deg) translateZ(16px); }
+        }
+
+        /* アニメーション */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+
+        @keyframes shine {
+            0% { background-position: -100% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .hovering-point {
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="app-header">
+            <div class="app-logo">
+                <div class="logo-cube">
+                    <div class="logo-face"></div>
+                    <div class="logo-face"></div>
+                    <div class="logo-face"></div>
+                    <div class="logo-face"></div>
+                    <div class="logo-face"></div>
+                    <div class="logo-face"></div>
+                </div>
+                <h1 class="app-title">SECTION CUBE</h1>
+            </div>
+            <p class="app-subtitle">立方体を3点で切断し、切断面を探索しよう</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <div class="status-display">
+                    <div id="pointsSelected">選択した点: 0/3</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="canvas-container">
+                    <canvas id="gameCanvas" width="600" height="400"></canvas>
+                    <div id="loadingOverlay" class="loading-overlay">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+                
+                <div id="statusMessage">立方体の頂点または辺をクリックしてください</div>
+                
+                <div class="button-container">
+                    <button id="resetButton" class="app-button btn-danger">リセット</button>
+                    <button id="resetRotationButton" class="app-button btn-secondary">回転をリセット</button>
+                </div>
+                
+                <ul class="instruction-list">
+                    <li><strong>頂点または辺</strong>をクリックして3点を選びます</li>
+                    <li>3点を選ぶと、その3点を通る平面で立方体が切断されます</li>
+                    <li><strong>マウスドラッグ</strong>で立方体を自由に回転できます</li>
+                </ul>
+                
+                <div class="control-tip">
+                    辺や頂点にマウスを近づけると選択可能な点が光ります<br>
+                    選択した点は番号付きで表示され、常に見えるようになっています
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            SECTION CUBE - 立方体切断アプリケーション &copy; 2025
+        </div>
+    </div>
+
+    <script>
+        // キャンバスの設定
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        // モバイルデバイスかどうかの判定
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        // 16進数カラーコードをRGBA形式に変換するヘルパー関数
+        function hexToRgba(hex, alpha) {
+            // #を取り除く
+            hex = hex.replace('#', '');
+            
+            // 16進数を10進数に変換
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            
+            // RGBA形式の文字列を返す
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        
+        // キャンバスサイズ調整関数（レスポンシブ対応）
+        function resizeCanvas() {
+            const containerWidth = canvas.parentElement.clientWidth;
+            canvas.width = containerWidth;
+            canvas.height = Math.min(containerWidth * 0.7, 450);
+            
+            // オフセット値も更新
+            offsetX = canvas.width / 2;
+            offsetY = canvas.height / 2;
+            
+            // スケール値も更新（キャンバスサイズに応じて調整）
+            scale = Math.min(canvas.width, canvas.height) / 4;
+            
+            // モバイルデバイスではスケールを大きめに
+            if (isMobile) {
+                scale *= 1.2;
+            }
+        }
+        
+        // 再描画関数を独立させて呼び出しやすくする
+        function redraw() {
+            // 最初の描画前にエラー処理を追加
+            try {
+                draw();
+            } catch (e) {
+                console.error('描画エラー:', e);
+                showError('描画エラーが発生しました', '申し訳ありませんが、ブラウザが対応していないか、一時的な問題が発生しました。ページを再読み込みしてみてください。');
+            }
+        }
+        
+        // エラーメッセージを表示する関数
+        function showError(title, message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <h3>${title}</h3>
+                <p>${message}</p>
+                <button onclick="location.reload()">再読み込み</button>
+            `;
+            canvas.parentElement.appendChild(errorDiv);
+        }
+        
+        // 初期化時とウィンドウリサイズ時にキャンバスサイズを調整
+        window.addEventListener('resize', function() {
+            resizeCanvas();
+            redraw();
+        });
+        
+        // 状態管理変数
+        let selectedPoints = [];
+        let selectedPoints3D = []; // 3D座標を保存（画面上での位置ではなく実際の3D座標）
+        let pointsCounter = document.getElementById('pointsSelected');
+        let statusMessage = document.getElementById('statusMessage');
+        
+        // ホバー状態の管理
+        let hoverPoint = null;
+        let hoverEdge = null;
+        
+        // 回転角度の初期値
+        let rotateX = 0.3; // X軸周りの回転（上下）
+        let rotateY = 0.5; // Y軸周りの回転（左右）
+        
+        // マウスドラッグによる回転制御
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        
+        let isCut = false;
+
+        // 立方体のサイズを調整（単位立方体）
+        const cubeSize = 1.0;
+        
+        // 立方体の頂点座標（整った立方体に）
+        const vertices = [
+            [-cubeSize, -cubeSize, -cubeSize], // 0: 左下前
+            [cubeSize, -cubeSize, -cubeSize],  // 1: 右下前
+            [cubeSize, cubeSize, -cubeSize],   // 2: 右上前
+            [-cubeSize, cubeSize, -cubeSize],  // 3: 左上前
+            [-cubeSize, -cubeSize, cubeSize],  // 4: 左下奥
+            [cubeSize, -cubeSize, cubeSize],   // 5: 右下奥
+            [cubeSize, cubeSize, cubeSize],    // 6: 右上奥
+            [-cubeSize, cubeSize, cubeSize]    // 7: 左上奥
+        ];
+        
+        // 立方体の辺
+        const edges = [
+            [0, 1], [1, 2], [2, 3], [3, 0], // 前面
+            [4, 5], [5, 6], [6, 7], [7, 4], // 奥面
+            [0, 4], [1, 5], [2, 6], [3, 7]  // 接続辺
+        ];
+        
+        // 立方体の面
+        const faces = [
+            [0, 1, 2, 3], // 前面 (Z-)
+            [4, 5, 6, 7], // 奥面 (Z+)
+            [0, 1, 5, 4], // 下面 (Y-)
+            [2, 3, 7, 6], // 上面 (Y+)
+            [0, 3, 7, 4], // 左面 (X-)
+            [1, 2, 6, 5]  // 右面 (X+)
+        ];
+        
+        // 面の色（モダンでカッコいい色に）
+        const faceColors = [
+            'rgba(10, 132, 255, 0.12)', // 青
+            'rgba(94, 92, 230, 0.12)',  // 紫
+            'rgba(0, 198, 255, 0.12)',  // 水色
+            'rgba(191, 90, 242, 0.12)', // ピンク
+            'rgba(48, 209, 88, 0.12)',  // 緑
+            'rgba(255, 159, 10, 0.12)'  // オレンジ
+        ];
+        
+        // 切断面の色（グラデーション用）
+        const cutGradientColors = {
+            start: '#0A84FF',  // 青
+            end: '#30D158'     // 緑
+        };
+        
+        // 3D→2D投影の設定
+        let scale = 120; // 立方体の大きさ（動的調整される）
+        let offsetX = canvas.width / 2;
+        let offsetY = canvas.height / 2;
+        
+        // 3D点を2D画面に投影する関数（平行性を強く維持する等角投影）
+        function project(point3D) {
+            // 回転を適用
+            const x = point3D[0];
+            const y = point3D[1];
+            const z = point3D[2];
+            
+            // Y軸周りの回転（左右）
+            const cosY = Math.cos(rotateY);
+            const sinY = Math.sin(rotateY);
+            const rotX1 = x * cosY - z * sinY;
+            const rotZ1 = x * sinY + z * cosY;
+            
+            // X軸周りの回転（上下）
+            const cosX = Math.cos(rotateX);
+            const sinX = Math.sin(rotateX);
+            const rotY1 = y * cosX - rotZ1 * sinX;
+            const rotZ2 = y * sinX + rotZ1 * cosX;
+            
+            // 非常に弱い遠近感（ほぼ等角投影）- 平行性を最大限維持
+            const zFactor = 1.0 - rotZ2 * 0.02; // 遠近感を極めて弱く
+            
+            // 2D座標に変換
+            const x2D = offsetX + rotX1 * scale * zFactor;
+            const y2D = offsetY - rotY1 * scale * zFactor; // Y軸は上下逆
+            
+            return {
+                x: x2D,
+                y: y2D,
+                z: rotZ2,
+                zFactor: zFactor,
+                original3D: [rotX1, rotY1, rotZ2] // 回転後の3D座標も保持
+            };
+        }
+        
+        // 点と辺の最短距離を計算する関数（ホバー効果も考慮）
+        function distanceToEdge(point, edgeStart, edgeEnd) {
+            const edgeVector = {
+                x: edgeEnd.x - edgeStart.x,
+                y: edgeEnd.y - edgeStart.y
+            };
+            
+            const pointVector = {
+                x: point.x - edgeStart.x,
+                y: point.y - edgeStart.y
+            };
+            
+            // 辺のベクトルに沿った比率（0～1の範囲に制限）
+            const edgeLength = edgeVector.x * edgeVector.x + edgeVector.y * edgeVector.y;
+            if (edgeLength === 0) return { distance: Infinity };
+            
+            const dotProduct = pointVector.x * edgeVector.x + pointVector.y * edgeVector.y;
+            const t = Math.max(0, Math.min(1, dotProduct / edgeLength));
+            
+            // 辺上の最近接点
+            const closestPoint = {
+                x: edgeStart.x + t * edgeVector.x,
+                y: edgeStart.y + t * edgeVector.y
+            };
+            
+            // 点と最近接点の距離
+            const dx = point.x - closestPoint.x;
+            const dy = point.y - closestPoint.y;
+            
+            return {
+                distance: Math.sqrt(dx * dx + dy * dy),
+                point: closestPoint,
+                ratio: t,
+                edgeIndex: null // 後で設定
+            };
+        }
+        
+        // 3D座標を補間する関数
+        function interpolate3D(point1, point2, ratio) {
+            return [
+                point1[0] + (point2[0] - point1[0]) * ratio,
+                point1[1] + (point2[1] - point1[1]) * ratio,
+                point1[2] + (point2[2] - point1[2]) * ratio
+            ];
+        }
+        
+        // 描画関数
+        function draw() {
+            if (!ctx) return; // コンテキストがない場合は何もしない
+            
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景グラデーション（スタイリッシュな雰囲気を出す）
+            const bgGradient = ctx.createRadialGradient(
+                offsetX, offsetY, 0, 
+                offsetX, offsetY, Math.max(canvas.width, canvas.height)
+            );
+            bgGradient.addColorStop(0, 'rgba(30, 30, 35, 0.5)');
+            bgGradient.addColorStop(1, 'rgba(15, 15, 18, 0.5)');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 投影された頂点を計算
+            const projectedVertices = vertices.map(v => project(v));
+            
+            // 立方体の面をZ値でソート（背面から前面の順に描画）
+            const sortedFaces = [...faces].map((face, index) => ({
+                face,
+                index,
+                z: (projectedVertices[face[0]].z + projectedVertices[face[1]].z + 
+                   projectedVertices[face[2]].z + projectedVertices[face[3]].z) / 4
+            })).sort((a, b) => a.z - b.z);
+            
+            // エッジのZ値をソート（背面から前面の順）
+            const sortedEdges = [...edges].map((edge, index) => ({
+                edge,
+                index,
+                z: (projectedVertices[edge[0]].z + projectedVertices[edge[1]].z) / 2,
+                visible: projectedVertices[edge[0]].z > -1 && projectedVertices[edge[1]].z > -1
+            })).sort((a, b) => a.z - b.z);
+            
+            // 切断面情報を準備
+            let cutPlane = null;
+            let part1Faces = [];
+            let part2Faces = [];
+            
+            if (selectedPoints3D.length === 3) {
+                // 選択された3点から平面を計算
+                const p1 = selectedPoints3D[0];
+                const p2 = selectedPoints3D[1];
+                const p3 = selectedPoints3D[2];
+                
+                // 2つのベクトルを計算
+                const v1 = [
+                    p2[0] - p1[0],
+                    p2[1] - p1[1],
+                    p2[2] - p1[2]
+                ];
+                const v2 = [
+                    p3[0] - p1[0],
+                    p3[1] - p1[1],
+                    p3[2] - p1[2]
+                ];
+                
+                // 外積で法線ベクトルを計算
+                const normal = [
+                    v1[1] * v2[2] - v1[2] * v2[1],
+                    v1[2] * v2[0] - v1[0] * v2[2],
+                    v1[0] * v2[1] - v1[1] * v2[0]
+                ];
+                
+                // 法線ベクトルの長さを計算
+                const length = Math.sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+                
+                // 三点が一直線上にないことを確認（法線ベクトルの長さがほぼゼロでない）
+                if (length > 0.001) {
+                    // 正規化
+                    normal[0] /= length;
+                    normal[1] /= length;
+                    normal[2] /= length;
+                    
+                    // 平面の方程式: ax + by + cz + d = 0
+                    const d = -(normal[0] * p1[0] + normal[1] * p1[1] + normal[2] * p1[2]);
+                    
+                    cutPlane = { normal, d };
+                    isCut = true;
+                    
+                    // 各頂点と平面の位置関係を計算
+                    const pointSides = vertices.map(v => {
+                        const dot = normal[0] * v[0] + normal[1] * v[1] + normal[2] * v[2] + d;
+                        return dot > 0.001 ? 1 : (dot < -0.001 ? -1 : 0);
+                    });
+                    
+                    // 面を2つのパートに分類
+                    sortedFaces.forEach(({ face, index }) => {
+                        // 面の頂点がすべて平面の同じ側にあるか
+                        const side1 = pointSides[face[0]];
+                        const side2 = pointSides[face[1]];
+                        const side3 = pointSides[face[2]];
+                        const side4 = pointSides[face[3]];
+                        
+                        // 面が平面で切断されるかどうか判定
+                        if (side1 >= 0 && side2 >= 0 && side3 >= 0 && side4 >= 0) {
+                            part1Faces.push({ face, index });
+                        } else if (side1 <= 0 && side2 <= 0 && side3 <= 0 && side4 <= 0) {
+                            part2Faces.push({ face, index });
+                        } else {
+                            // 面が切断される場合は両方のパートに追加
+                            part1Faces.push({ face, index, cut: true });
+                            part2Faces.push({ face, index, cut: true });
+                        }
+                    });
+                } else {
+                    statusMessage.textContent = "選択した3点が一直線上にあります。別の点を選んでください。";
+                    statusMessage.className = "highlight";
+                    isCut = false;
+                }
+            }
+            
+            // 切断面前後関係を調整して描画順を決定
+            let drawParts = sortedFaces;
+            if (isCut && part1Faces.length > 0 && part2Faces.length > 0) {
+                // 平均Z値で部分の前後関係を判定
+                const avgZ1 = part1Faces.reduce((sum, { face }) => {
+                    return sum + face.reduce((s, vIdx) => s + projectedVertices[vIdx].z, 0) / face.length;
+                }, 0) / part1Faces.length;
+                
+                const avgZ2 = part2Faces.reduce((sum, { face }) => {
+                    return sum + face.reduce((s, vIdx) => s + projectedVertices[vIdx].z, 0) / face.length;
+                }, 0) / part2Faces.length;
+                
+                // 手前にある部分を後に描画
+                drawParts = avgZ1 < avgZ2 ? [...part1Faces, ...part2Faces] : [...part2Faces, ...part1Faces];
+            }
+            
+            // 立方体の面を描画
+            for (const { face, index, cut } of drawParts) {
+                const points = face.map(i => projectedVertices[i]);
+                
+                // 面が切断されているかどうかで色を変える
+                if (cut) {
+                    // 切断面に近い面は薄く
+                    ctx.fillStyle = faceColors[index].replace(/[\d.]+\)$/,'0.08)');
+                } else {
+                    ctx.fillStyle = faceColors[index];
+                }
+                
+                // 面を描画
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                // 面の輪郭を描画
+                ctx.strokeStyle = 'rgba(160, 160, 180, 0.15)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // 切断面を描画
+            if (cutPlane && isCut) {
+                drawCutPlane(cutPlane, projectedVertices);
+            }
+            
+            // グリッドガイドを描画して立方体の形を強調
+            drawGridGuides(projectedVertices);
+            
+            // 辺を描画（奥の辺は点線で）
+            drawCubeEdges(sortedEdges, projectedVertices);
+            
+            // 頂点を描画（頂点番号は表示しない）
+            for (let i = 0; i < projectedVertices.length; i++) {
+                const pv = projectedVertices[i];
+                
+                // 頂点サイズを調整（手前ほど大きく）
+                const size = 4 * (0.8 + pv.zFactor * 0.5);
+                
+                // 頂点描画（半透明の白い円）
+                ctx.beginPath();
+                ctx.arc(pv.x, pv.y, size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            // ホバー中の点を描画（選択前の光る点）
+            if (hoverPoint !== null) {
+                drawHoverPoint(hoverPoint);
+            }
+            
+            // 選択した点を描画（3D空間での実際の点を描画）- 必ず最後に描画して重なりを防ぐ
+            drawSelectedPoints3D(projectedVertices);
+        }
+        
+        // 立方体の辺を描画する関数（奥の辺は点線で）
+        function drawCubeEdges(sortedEdges, projectedVertices) {
+            // まず背面の辺を点線で描画
+            ctx.setLineDash([2, 3]);
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = 'rgba(180, 180, 200, 0.3)';
+            
+            for (const { edge, z } of sortedEdges) {
+                if (z < 0) { // 視点より後ろの辺は点線で描画
+                    const [i, j] = edge;
+                    ctx.beginPath();
+                    ctx.moveTo(projectedVertices[i].x, projectedVertices[i].y);
+                    ctx.lineTo(projectedVertices[j].x, projectedVertices[j].y);
+                    ctx.stroke();
+                }
+            }
+            
+            // 次に前面の辺を実線で描画
+            ctx.setLineDash([]);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            
+            for (const { edge, z } of sortedEdges) {
+                if (z >= 0) { // 視点より前の辺は実線で描画
+                    const [i, j] = edge;
+                    ctx.beginPath();
+                    ctx.moveTo(projectedVertices[i].x, projectedVertices[i].y);
+                    ctx.lineTo(projectedVertices[j].x, projectedVertices[j].y);
+                    ctx.stroke();
+                }
+            }
+            
+            // 線スタイルをリセット
+            ctx.setLineDash([]);
+        }
+        
+        // グリッドガイドを描画する関数（平行線を強調）
+        function drawGridGuides(projectedVertices) {
+            // XY平面のグリッド
+            const gridLines = [
+                // X方向のグリッド線（Y一定の辺）
+                [[0, 1], [3, 2]], // 前面のY軸方向
+                [[4, 5], [7, 6]], // 奥面のY軸方向
+                // Y方向のグリッド線（X一定の辺）
+                [[0, 3], [1, 2]], // 前面のX軸方向
+                [[4, 7], [5, 6]], // 奥面のX軸方向
+                // Z方向のグリッド線（X,Y一定の辺）
+                [[0, 4], [1, 5]], // 下面のZ軸方向
+                [[3, 7], [2, 6]]  // 上面のZ軸方向
+            ];
+            
+            // 破線スタイルで平行グリッドを描画（薄く）
+            ctx.setLineDash([2, 3]);
+            ctx.strokeStyle = 'rgba(100, 100, 120, 0.1)';
+            ctx.lineWidth = 0.8;
+            
+            for (const lines of gridLines) {
+                for (const [start, end] of lines) {
+                    const startPoint = projectedVertices[start];
+                    const endPoint = projectedVertices[end];
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(startPoint.x, startPoint.y);
+                    ctx.lineTo(endPoint.x, endPoint.y);
+                    ctx.stroke();
+                }
+            }
+            
+            // 破線スタイルをリセット
+            ctx.setLineDash([]);
+        }
+        
+        // ホバー中の点を描画（光る効果）
+        function drawHoverPoint(point) {
+            // グロー効果のある円
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 14, 0, Math.PI * 2);
+            
+            // 放射状グラデーションでグロー効果
+            const glowGradient = ctx.createRadialGradient(
+                point.x, point.y, 2,
+                point.x, point.y, 14
+            );
+            glowGradient.addColorStop(0, 'rgba(0, 198, 255, 0.8)');
+            glowGradient.addColorStop(0.5, 'rgba(0, 198, 255, 0.3)');
+            glowGradient.addColorStop(1, 'rgba(0, 198, 255, 0)');
+            
+            ctx.fillStyle = glowGradient;
+            ctx.fill();
+            
+            // 中心の点
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 198, 255, 0.8)';
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+        
+        // 選択した点を描画する関数（3D座標を元に描画）
+        function drawSelectedPoints3D(projectedVertices) {
+            if (selectedPoints3D.length === 0) return;
+            
+            // 選択した3D点を回転させて描画（Z順にソートして奥から描画）
+            // まず各点のZ座標を計算して配列にする
+            const pointsWithZ = selectedPoints3D.map((point3D, index) => {
+                const projectedPoint = project(point3D);
+                return {
+                    index,
+                    point3D,
+                    projected: projectedPoint,
+                    z: projectedPoint.z
+                };
+            });
+            
+            // Z座標でソート（奥から前の順）
+            pointsWithZ.sort((a, b) => a.z - b.z);
+            
+            // 選択点を描画
+            for (const {index: i, point3D, projected: projectedPoint} of pointsWithZ) {
+                // 奥にある点も必ず見えるように少し大きめに
+                const sizeBoost = projectedPoint.z < 0 ? 1.5 : 1;
+                const baseSize = 12 * sizeBoost;
+                const innerSize = 8 * sizeBoost;
+                
+                // 点の背景（グロー効果）- 少し大きめに
+                ctx.beginPath();
+                ctx.arc(projectedPoint.x, projectedPoint.y, baseSize + 4, 0, Math.PI * 2);
+                
+                // グラデーションで光彩効果
+                const gradient = ctx.createRadialGradient(
+                    projectedPoint.x, projectedPoint.y, 2,
+                    projectedPoint.x, projectedPoint.y, baseSize + 4
+                );
+                
+                // 選択点は色分け
+                let pointColor;
+                if (i === 0) pointColor = '#0A84FF'; // 1点目は青
+                else if (i === 1) pointColor = '#FF9F0A'; // 2点目はオレンジ
+                else pointColor = '#30D158'; // 3点目は緑
+                
+                gradient.addColorStop(0, pointColor);
+                gradient.addColorStop(0.5, hexToRgba(pointColor, 0.5));
+                gradient.addColorStop(1, hexToRgba(pointColor, 0));
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // 外側の光彩効果
+                ctx.beginPath();
+                ctx.arc(projectedPoint.x, projectedPoint.y, baseSize, 0, Math.PI * 2);
+                ctx.fillStyle = hexToRgba(pointColor, 0.7);
+                ctx.fill();
+                
+                // 中心の点
+                ctx.beginPath();
+                ctx.arc(projectedPoint.x, projectedPoint.y, innerSize, 0, Math.PI * 2);
+                ctx.fillStyle = pointColor;
+                ctx.fill();
+                
+                // 白い縁取り
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // 点のインデックスを表示（どの順番で選んだかが分かるように）
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = 'bold ' + Math.round(10 * sizeBoost) + 'px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((i+1).toString(), projectedPoint.x, projectedPoint.y);
+            }
+        }
+        
+        // 切断面を描画する関数
+        function drawCutPlane(plane, projectedVertices) {
+            // 切断面と立方体の交点を見つける
+            const intersections = [];
+            
+            // 各エッジと平面の交点を計算
+            for (const [i, j] of edges) {
+                const p1 = vertices[i];
+                const p2 = vertices[j];
+                
+                // 平面の方程式に頂点を代入
+                const dot1 = plane.normal[0] * p1[0] + plane.normal[1] * p1[1] + plane.normal[2] * p1[2] + plane.d;
+                const dot2 = plane.normal[0] * p2[0] + plane.normal[1] * p2[1] + plane.normal[2] * p2[2] + plane.d;
+                
+                // 符号が異なれば交点がある（ゼロも含む）
+                if (dot1 * dot2 <= 0 && Math.abs(dot1 - dot2) > 0.0001) {
+                    // 交点の計算（線形補間）
+                    const t = Math.abs(dot1) / (Math.abs(dot1) + Math.abs(dot2));
+                    const intersection = [
+                        p1[0] + t * (p2[0] - p1[0]),
+                        p1[1] + t * (p2[1] - p1[1]),
+                        p1[2] + t * (p2[2] - p1[2])
+                    ];
+                    intersections.push(project(intersection));
+                }
+            }
+            
+            // 3点以上の交点があれば多角形として描画
+            if (intersections.length >= 3) {
+                // 交点を平面上で並び替え
+                const center = {
+                    x: intersections.reduce((sum, p) => sum + p.x, 0) / intersections.length,
+                    y: intersections.reduce((sum, p) => sum + p.y, 0) / intersections.length
+                };
+                
+                // 中心点からの角度で並べ替え
+                intersections.sort((a, b) => {
+                    const angleA = Math.atan2(a.y - center.y, a.x - center.x);
+                    const angleB = Math.atan2(b.y - center.y, b.x - center.x);
+                    return angleA - angleB;
+                });
+                
+                // 切断面を描画（より洗練された美しいグラデーション）
+                ctx.beginPath();
+                ctx.moveTo(intersections[0].x, intersections[0].y);
+                for (let i = 1; i < intersections.length; i++) {
+                    ctx.lineTo(intersections[i].x, intersections[i].y);
+                }
+                ctx.closePath();
+                
+                // 高級感あるグラデーション
+                const gradient = ctx.createLinearGradient(
+                    intersections[0].x, intersections[0].y,
+                    intersections[Math.floor(intersections.length/2)].x, 
+                    intersections[Math.floor(intersections.length/2)].y
+                );
+                gradient.addColorStop(0, cutGradientColors.start);
+                gradient.addColorStop(0.5, '#64D2FF'); // 中間色（水色）
+                gradient.addColorStop(1, cutGradientColors.end);
+                
+                ctx.fillStyle = gradient;
+                ctx.globalAlpha = 0.85;  // ほどよく透明に
+                ctx.fill();
+                
+                // 切断面の輪郭に光彩効果
+                ctx.shadowColor = 'rgba(0, 198, 255, 0.5)';
+                ctx.shadowBlur = 10;
+                ctx.strokeStyle = '#FFFFFF';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // エフェクトをリセット
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1.0;
+                
+                // 切断面が表示されていることを通知
+                statusMessage.textContent = "切断完了！ドラッグして回転させ、切断面を観察してみましょう";
+                statusMessage.className = "highlight";
+            } else {
+                statusMessage.textContent = "切断できませんでした。別の点を選んでください。";
+                statusMessage.className = "highlight";
+                isCut = false;
+            }
+        }
+        
+        // クリックされた位置に最も近い点（頂点または辺上）を見つける関数
+        function findClickedPoint(x, y) {
+            const projectedVertices = vertices.map(v => project(v));
+            let bestMatch = {
+                type: null,
+                index: -1,
+                distance: Infinity,
+                point: null,
+                coordinates3D: null
+            };
+            
+            // 1. 頂点チェック
+            for (let i = 0; i < projectedVertices.length; i++) {
+                const pv = projectedVertices[i];
+                
+                const dx = pv.x - x;
+                const dy = pv.y - y;
+                const dist = dx * dx + dy * dy;
+                
+                // しきい値を決定（クリック位置から25px以内）
+                // モバイルではしきい値を大きくする
+                const threshold = isMobile ? 625 : 400; // 25px^2 または 20px^2
+                if (dist < Math.min(bestMatch.distance, threshold)) {
+                    bestMatch = {
+                        type: 'vertex',
+                        index: i,
+                        distance: dist,
+                        point: { x: pv.x, y: pv.y },
+                        coordinates3D: vertices[i]
+                    };
+                }
+            }
+            
+            // 2. 辺チェック（頂点に近すぎない場合）
+            if (bestMatch.distance > 100) {
+                for (let i = 0; i < edges.length; i++) {
+                    const [v1, v2] = edges[i];
+                    const start = projectedVertices[v1];
+                    const end = projectedVertices[v2];
+                    
+                    const result = distanceToEdge({ x, y }, start, end);
+                    // しきい値を決定（辺から20px以内）- モバイルでは25px
+                    const edgeThreshold = isMobile ? 25 : 20;
+                    if (result.distance < Math.min(bestMatch.distance, 400) && result.distance < edgeThreshold) {
+                        // 線分上の位置を3D座標に変換
+                        const coordinates3D = interpolate3D(
+                            vertices[v1],
+                            vertices[v2],
+                            result.ratio
+                        );
+                        
+                        bestMatch = {
+                            type: 'edge',
+                            index: i,
+                            distance: result.distance,
+                            point: result.point,
+                            coordinates3D: coordinates3D,
+                            ratio: result.ratio,
+                            edgeVertices: [v1, v2]
+                        };
+                    }
+                }
+            }
+            
+            // 面のチェックはしない（ユーザーリクエストにより）
+            
+            // 結果を返す
+            if (bestMatch.type === null) {
+                return null;
+            }
+            
+            return bestMatch;
+        }
+        
+        // マウス移動時のホバー効果
+        canvas.addEventListener('mousemove', function(e) {
+            if (isDragging) return; // ドラッグ中はホバー効果を表示しない
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 既に3点選択済みの場合はホバー効果を表示しない
+            if (selectedPoints3D.length >= 3) {
+                hoverPoint = null;
+                redraw();
+                return;
+            }
+            
+            // ホバー位置の点を見つける
+            const clickResult = findClickedPoint(x, y);
+            
+            if (clickResult) {
+                // 既に選択した頂点なら表示しない
+                if (clickResult.type === 'vertex' && 
+                    selectedPoints.some(p => p === clickResult.index)) {
+                    hoverPoint = null;
+                } 
+                // 辺上や頂点上ならホバー効果を表示
+                else {
+                    hoverPoint = clickResult.point;
+                }
+                redraw(); // ホバー効果を表示するために再描画
+            } else {
+                if (hoverPoint !== null) {
+                    hoverPoint = null;
+                    redraw(); // ホバー効果を消すために再描画
+                }
+            }
+        });
+        
+        // クリックイベントハンドラ
+        canvas.addEventListener('click', function(e) {
+            // ドラッグ中のクリックは無視
+            if (isDragging) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 既に3点選択済みの場合はリセットしてから新たに選択
+            if (selectedPoints3D.length >= 3) {
+                selectedPoints = [];
+                selectedPoints3D = [];
+                isCut = false;
+                pointsCounter.textContent = '選択した点: 0/3';
+                statusMessage.textContent = '立方体の頂点または辺をクリックしてください';
+                statusMessage.className = "";
+            }
+            
+            // クリックした点（頂点または辺上）を見つける
+            const clickResult = findClickedPoint(x, y);
+            
+            if (clickResult) {
+                let newPointIndex;
+                
+                // クリック結果に基づいて点を追加
+                if (clickResult.type === 'vertex') {
+                    // 頂点の場合
+                    newPointIndex = clickResult.index;
+                    
+                    // 同じ頂点が既に選択されていたら追加しない
+                    if (selectedPoints.includes(newPointIndex)) {
+                        statusMessage.textContent = "同じ点は選べません。別の点を選んでください。";
+                        statusMessage.className = "highlight";
+                        return;
+                    }
+                    
+                    // 3D座標を保存
+                    selectedPoints.push(newPointIndex);
+                    selectedPoints3D.push(clickResult.coordinates3D);
+                } else if (clickResult.type === 'edge') {
+                    // 辺上の点の場合
+                    const point3D = clickResult.coordinates3D;
+                    
+                    // 同じ場所の点がないか確認（3D座標で確認）
+                    let isDuplicate = false;
+                    for (const existingPoint of selectedPoints3D) {
+                        const dx = point3D[0] - existingPoint[0];
+                        const dy = point3D[1] - existingPoint[1];
+                        const dz = point3D[2] - existingPoint[2];
+                        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                        
+                        if (dist < 0.05) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                    
+                    if (isDuplicate) {
+                        statusMessage.textContent = "同じ場所の点は選べません。別の点を選んでください。";
+                        statusMessage.className = "highlight";
+                        return;
+                    }
+                    
+                    // 3D座標を保存
+                    selectedPoints.push(`edge-${clickResult.edgeVertices[0]}-${clickResult.edgeVertices[1]}-${clickResult.ratio.toFixed(3)}`);
+                    selectedPoints3D.push(point3D);
+                } else {
+                    // 面上の点は選べない（ユーザーリクエストにより）
+                    return;
+                }
+                
+                // カウンター表示を更新
+                pointsCounter.textContent = `選択した点: ${selectedPoints3D.length}/3`;
+                
+                // 選択種類に応じたメッセージ
+                if (clickResult.type === 'vertex') {
+                    statusMessage.textContent = `頂点を選択しました。あと${3-selectedPoints3D.length}点選んでください。`;
+                    statusMessage.className = "";
+                } else if (clickResult.type === 'edge') {
+                    statusMessage.textContent = `辺上の点を選択しました。あと${3-selectedPoints3D.length}点選んでください。`;
+                    statusMessage.className = "";
+                }
+                
+                // 3点選択したら切断を実行
+                if (selectedPoints3D.length === 3) {
+                    statusMessage.textContent = "3点選択完了！切断面を計算中...";
+                    statusMessage.className = "highlight";
+                }
+                
+                // ホバー効果をクリア
+                hoverPoint = null;
+                
+                // 再描画
+                redraw();
+            }
+        });
+        
+        // タッチイベントサポート（モバイル対応）
+        canvas.addEventListener('touchstart', function(e) {
+            e.preventDefault(); // スクロール防止
+            isDragging = true;
+            previousMousePosition = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY
+            };
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', function(e) {
+            e.preventDefault(); // スクロール防止
+            if (!isDragging) return;
+            
+            const deltaX = e.touches[0].clientX - previousMousePosition.x;
+            const deltaY = e.touches[0].clientY - previousMousePosition.y;
+            
+            // タッチ移動量に基づいて回転角度を更新
+            rotateX -= deltaY * 0.005;
+            rotateY += deltaX * 0.005;
+            
+            // 極端な角度を防ぐ
+            rotateX = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, rotateX));
+            
+            previousMousePosition = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY
+            };
+            
+            // 再描画
+            redraw();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', function(e) {
+            e.preventDefault(); // スクロール防止
+            
+            // タッチ終了後に短時間待ってからクリックとみなす
+            const wasDragging = isDragging;
+            const hasMoved = e.changedTouches && e.changedTouches[0] && 
+                           Math.abs(e.changedTouches[0].clientX - previousMousePosition.x) > 5 || 
+                           Math.abs(e.changedTouches[0].clientY - previousMousePosition.y) > 5;
+            
+            isDragging = false;
+            
+            // 微小な移動の場合はクリックとみなす
+            if (!wasDragging || !hasMoved) {
+                setTimeout(() => {
+                    const touch = e.changedTouches[0];
+                    // タッチ位置でクリックイベントを擬似的に発生させる
+                    const fakeClick = new MouseEvent('click', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    canvas.dispatchEvent(fakeClick);
+                }, 50);
+            }
+        }, { passive: false });
+        
+        // マウスドラッグのイベントハンドラ（回転制御）
+        canvas.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            previousMousePosition = {
+                x: e.clientX,
+                y: e.clientY
+            };
+            canvas.style.cursor = 'grabbing';
+        });
+        
+        canvas.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            
+            // マウス移動量に基づいて回転角度を更新
+            rotateX -= deltaY * 0.005;
+            rotateY += deltaX * 0.005;
+            
+            // 極端な角度を防ぐ
+            rotateX = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, rotateX));
+            
+            previousMousePosition = {
+                x: e.clientX,
+                y: e.clientY
+            };
+            
+            // 再描画
+            redraw();
+        });
+        
+        canvas.addEventListener('mouseup', function() {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+        
+        canvas.addEventListener('mouseleave', function() {
+            if (isDragging) {
+                isDragging = false;
+                canvas.style.cursor = 'grab';
+            }
+            // マウスが離れたらホバー効果も消す
+            if (hoverPoint !== null) {
+                hoverPoint = null;
+                redraw();
+            }
+        });
+        
+        // 回転リセットボタンのイベントハンドラ
+        document.getElementById('resetRotationButton').addEventListener('click', function() {
+            // スタイリッシュなアニメーションで回転をリセット
+            const startX = rotateX, startY = rotateY;
+            const targetX = 0.3, targetY = 0.5;
+            const duration = 500; // ミリ秒
+            const startTime = Date.now();
+            
+            function animateReset() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // イージング関数（スプリングのような動き）
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                
+                rotateX = startX + (targetX - startX) * easeOut;
+                rotateY = startY + (targetY - startY) * easeOut;
+                
+                redraw();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateReset);
+                }
+            }
+            
+            animateReset();
+            
+            // ボタン押下エフェクト
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+        
+        // リセットボタンのイベントハンドラ
+        document.getElementById('resetButton').addEventListener('click', function() {
+            // リセットボタンのアニメーション
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+            
+            selectedPoints = [];
+            selectedPoints3D = [];
+            isCut = false;
+            hoverPoint = null;
+            pointsCounter.textContent = '選択した点: 0/3';
+            statusMessage.textContent = '立方体の頂点または辺をクリックしてください';
+            statusMessage.className = "";
+            redraw();
+        });
+        
+        // iOS Safariでのスクロール問題対策
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.target === canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // キャンバス初期化関数（再試行機能付き）
+        function initializeCanvas(retryCount = 0) {
+            try {
+                resizeCanvas();
+                
+                // 初期描画で問題がないか確認
+                redraw();
+                
+                // 成功したらローディングオーバーレイを非表示
+                loadingOverlay.style.display = 'none';
+                
+                // 最初のステータスメッセージ設定
+                statusMessage.textContent = "立方体の頂点または辺をクリックしてください";
+            } catch (e) {
+                console.error('初期化エラー:', e);
+                
+                // 最大3回まで再試行
+                if (retryCount < 3) {
+                    console.log(`初期化を再試行します (${retryCount + 1}/3)...`);
+                    setTimeout(() => initializeCanvas(retryCount + 1), 500);
+                } else {
+                    // 3回試してもダメなら諦める
+                    loadingOverlay.style.display = 'none';
+                    showError('初期化エラー', 'アプリケーションの初期化に失敗しました。ブラウザを更新してもう一度お試しください。');
+                }
+            }
+        }
+        
+        // iOSデバイスでは初期化に余裕を持たせる
+        setTimeout(initializeCanvas, isIOS ? 500 : 100);
+    </script>
+</body>
+</html>
